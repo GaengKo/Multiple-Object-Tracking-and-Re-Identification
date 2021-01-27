@@ -4,20 +4,26 @@ import numpy as np
 class Motmetrics():
     def __init__(self):
         self.acc = mm.MOTAccumulator(auto_id=True)
+        self.mh = mm.metrics.create()
+        self.mm = mm
     def frame_update(self, detector, GT):
+
+        #print(detector)
+        #print()
+        #print(GT)
         d = []
         Gt = []
-        between_iou = []
         for i in GT:
-            Gt.append(GT[4])
-            for j in range(len(detector)):
-                temp = []
-                dis = self.iou_batch(j[:4],i[:4])
-                temp.append(dis)
-            between_iou.append(temp)
-
+            Gt.append(i[4])
+            #for j in detector:
+            #    temp = []
+            #    print(i[:4],j[:4])
+            #    dis = self.iou_batch(j[:4],i[:4])
+            #    temp.append(dis)
+            #between_iou.append(temp)
         for i in detector:
             d.append(i[4])
+        between_iou = self.iou_batch(detector[:][:4],GT[:][:4])
         self.acc.update(Gt,d,between_iou)
 
     def get_acc(self):
@@ -25,7 +31,7 @@ class Motmetrics():
 
 
 
-    def iou_batch(bb_test, bb_gt):
+    def iou_batch(self, bb_test, bb_gt):
         """
         From SORT: Computes IOU between two bboxes in the form [x1,y1,x2,y2]
         """

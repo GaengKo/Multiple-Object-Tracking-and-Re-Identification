@@ -25,6 +25,7 @@ import time
 import argparse
 from filterpy.kalman import KalmanFilter
 
+import MOT_metrics
 np.random.seed(0)
 
 
@@ -368,13 +369,33 @@ for i in range(len(filelist)):
         file_array[i].append(npath+'/'+j)
 
 #print(frame.shape)
-
-for video in file_array[1:-1]:
+#GT_path = '/label_02'
+video_num = 0
+for video in file_array[0:-1]:
     mot_tracker = Sort(max_age=1,
                        min_hits=3,
                        iou_threshold=0.3)  # create instance of the SORT tracker
+
+    f = open(path + '/label_02/' + filelist[video_num] + '.txt', 'r')
+    video_num+=1
+    lines = f.readlines()
+    txt_index = 0
+    mtr = MOT_metrics.Motmetrics()
     for f in video:
         print(f)
+        frame_num = f.split('/')[-1].split('.')[0]
+
+        gt_array = []
+        while True:
+            gt_split = lines[txt_index].split(' ')
+            if int(frame_num) == int(gt_split[0]):
+                if gt_split[1] != '-1':
+                    gt_array.append([float(gt_split[6]),float(gt_split[7]),float(gt_split[8]),float(gt_split[9]),int(gt_split[1])+1])
+                txt_index+=1
+            else:
+                break
+        #for i in gt_array:
+            #print(i)
         frame = cv2.imread(f)
         result = a.forword(frame)
         start_time = time.time()
@@ -383,6 +404,11 @@ for video in file_array[1:-1]:
         total_time += cycle_time
         total_frames += 1
         #print(result)
+        mtr.frame_update(trackers,gt_array)
+        summary = mtr.mh.compute(mtr.acc, metrics=mtr.mm.metrics.motchallenge_metrics, name='acc')
+        print(summary)
+
+        #print(mtr.get_acc().events)
         for d in trackers:
             #print(d)
             #d[:4] = list(map(int,d[:4]))
@@ -402,5 +428,6 @@ for video in file_array[1:-1]:
 
         #print(result)
         cv2.waitKey(1)
+    break
 #if cv2.waitKey(1) == ord('q'):
 #    break
