@@ -23,7 +23,12 @@ class Motmetrics():
             #between_iou.append(temp)
         for i in detector:
             d.append(i[4])
-        between_iou = self.iou_batch(detector[:][:4],GT[:][:4])
+        between_iou = self.iou_batch(GT[:][:],detector[:][:])
+        #print(type(between_iou))
+        between_iou = np.where(between_iou==0,np.NaN,between_iou)
+        print(Gt)
+        print(np.array(d))
+        print(between_iou)
         self.acc.update(Gt,d,between_iou)
 
     def get_acc(self):

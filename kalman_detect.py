@@ -9,7 +9,7 @@ os.add_dll_directory(py_dll_path)
 from models import *  # set ONNX_EXPORT in models.py
 from utils.datasets import *
 from utils.utils import *
-
+import pandas as pd
 
 import os
 import numpy as np
@@ -334,7 +334,15 @@ class Yolo():
         return result
 
 
+def set_pandas_display_options() -> None:
+    display = pd.options.display
+    display.max_columns = 100
+    display.max_rows = 100
+    display.max_colwidth = 199
+    display.width = None
 
+
+set_pandas_display_options()
 
 
 def parse_args():
@@ -387,12 +395,16 @@ for video in file_array[0:-1]:
 
         gt_array = []
         while True:
-            gt_split = lines[txt_index].split(' ')
-            if int(frame_num) == int(gt_split[0]):
-                if gt_split[1] != '-1':
-                    gt_array.append([float(gt_split[6]),float(gt_split[7]),float(gt_split[8]),float(gt_split[9]),int(gt_split[1])+1])
-                txt_index+=1
-            else:
+            try:
+                gt_split = lines[txt_index].split(' ')
+                if int(frame_num) == int(gt_split[0]):
+                    if gt_split[1] != '-1':
+                        gt_array.append([float(gt_split[6]),float(gt_split[7]),float(gt_split[8]),float(gt_split[9]),int(gt_split[1])+1])
+                    txt_index+=1
+                else:
+                    break
+            except Exception as e:
+                print(e)
                 break
         #for i in gt_array:
             #print(i)
@@ -404,9 +416,16 @@ for video in file_array[0:-1]:
         total_time += cycle_time
         total_frames += 1
         #print(result)
+        if int(frame_num) == 89:
+            print(trackers)
+            print('@@@@@@@@@@@@')
+            print(gt_array)
         mtr.frame_update(trackers,gt_array)
-        summary = mtr.mh.compute(mtr.acc, metrics=mtr.mm.metrics.motchallenge_metrics, name='acc')
-        print(summary)
+
+
+
+        #summary = mtr.mh.compute(mtr.acc, metrics=mtr.mm.metrics.motchallenge_metrics, name='acc')
+        #print(summary)
 
         #print(mtr.get_acc().events)
         for d in trackers:
@@ -428,6 +447,8 @@ for video in file_array[0:-1]:
 
         #print(result)
         cv2.waitKey(1)
+    summary = mtr.mh.compute(mtr.acc, metrics=mtr.mm.metrics.motchallenge_metrics, name='acc')
+    print(summary)
     break
 #if cv2.waitKey(1) == ord('q'):
 #    break
