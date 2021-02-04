@@ -1,29 +1,18 @@
 from __future__ import print_function
-import argparse
 import os
 import sys
-import numpy as np
-import cv2
+
 py_dll_path = os.path.join(sys.exec_prefix, 'Library', 'bin')
 os.add_dll_directory(py_dll_path)
-from models import *  # set ONNX_EXPORT in models.py
-from utils.datasets import *
+
 from utils.utils import *
-import pandas as pd
 
 import matplotlib
 
 matplotlib.use('TkAgg')
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
-from skimage import io
 
-import glob
-import time
-import argparse
 from filterpy.kalman import KalmanFilter
 
-import MOT_metrics
 np.random.seed(0)
 
 
@@ -231,7 +220,8 @@ class Sort(object):
     for t, trk in enumerate(trks):
       pos = self.trackers[t].predict()[0]
       trk[:] = [pos[0], pos[1], pos[2], pos[3], 0]
-      frame = cv2.rectangle(frame, (int(pos[0]), int(pos[1])), (int(pos[2]), int(pos[3])), (255, 0, 0), 3)
+      # predict display
+      #frame = cv2.rectangle(frame, (int(pos[0]), int(pos[1])), (int(pos[2]), int(pos[3])), (255, 0, 0), 3)
       if np.any(np.isnan(pos)):
         to_del.append(t)
     trks = np.ma.compress_rows(np.ma.masked_invalid(trks))
@@ -260,195 +250,3 @@ class Sort(object):
     if(len(ret)>0):
       return np.concatenate(ret)
     return np.empty((0,5))
-
-class Yolo():
-    def __init__(self):
-        self.weights = 'weights/best.pt'
-        self.half = True
-        self.cfg = 'cfg/yolov3-spp.cfg'
-        self.imgsz = (320, 192) if ONNX_EXPORT else 512  # (320, 192) or (416, 256) or (608, 352) for (height, width)
-
-        self.device = torch_utils.select_device(device='cpu' if ONNX_EXPORT else '')
-
-        self.model = Darknet(self.cfg, self.imgsz)
-
-        # load weights
-        attempt_download(self.weights)
-        if self.weights.endswith('.pt'):  # pytorch format
-            self.model.load_state_dict(torch.load(self.weights, map_location=self.device)['model'])
-        else:  # darknet format
-            load_darknet_weights(self.model, self.weights)
-
-        self.model.to(self.device).eval()
-
-        self.half = self.half and self.device.type != 'cpu'  # half precision only supported on CUDA
-        if self.half:
-            self.model.half()
-
-        self.names = 'data/kitti_OD.names'
-        self.names = list(glob.iglob('./**/' + self.names, recursive=True))[0]
-        #print('***',end='')
-
-        self.names = load_classes(self.names)
-        #print(self.names)
-        self.colors = [[random.randint(0, 255) for _ in range(3)] for _ in range(len(self.names))]
-    def forword(self, frame):
-        im0 = letterbox(frame, new_shape=self.imgsz)[0]
-        im0 = im0[:, :, ::-1].transpose(2, 0, 1)  # BGR to RGB, to 3x416x416
-        im0 = np.ascontiguousarray(im0)
-
-        img = torch.zeros((1, 3, self.imgsz, self.imgsz), device=self.device)
-        _ = self.model(img.half() if self.half else img.float()) if self.device.type != 'cpu' else None  # run once
-        img = torch.from_numpy(im0).to(self.device)
-        img = img.half() if self.half else img.float()  # uint8 to fp16/32
-        img /= 255.0  # 0 - 255 to 0.0 - 1.0
-        if img.ndimension() == 3:
-            img = img.unsqueeze(0)
-
-        t1 = torch_utils.time_synchronized()
-        #print(img.shape)
-        pred = self.model(img, augment=True)[0]
-        t2 = torch_utils.time_synchronized()
-
-        # to float
-        if self.half:
-            pred = pred.float()
-
-        # Apply NMS
-        pred = non_max_suppression(pred, 0.3, 0.6,
-                                   multi_label=False, agnostic=True)
-
-        gn = torch.tensor(frame.shape)[[1, 0, 1, 0]]
-        for i, det in enumerate(pred):
-            if det is not None and len(det):
-                det[:, :4] = scale_coords(img.shape[2:], det[:, :4], frame.shape).round()
-                #print(det[:,:4])
-        try:
-            result = pred[0].cpu().detach().numpy()
-        except Exception as E:
-            print(pred)
-            return []
-        #print(result)
-        return result
-
-
-def set_pandas_display_options() -> None:
-    display = pd.options.display
-    display.max_columns = 100
-    display.max_rows = 100
-    display.max_colwidth = 199
-    display.width = None
-
-
-set_pandas_display_options()
-
-
-def parse_args():
-    """Parse input arguments."""
-    parser = argparse.ArgumentParser(description='SORT demo')
-    parser.add_argument('--display', dest='display', help='Display online tracker output (slow) [False]',action='store_true')
-    parser.add_argument("--seq_path", help="Path to detections.", type=str, default='data')
-    parser.add_argument("--phase", help="Subdirectory in seq_path.", type=str, default='train')
-    parser.add_argument("--max_age",
-                        help="Maximum number of frames to keep alive a track without associated detections.",
-                        type=int, default=1)
-    parser.add_argument("--min_hits",
-                        help="Minimum number of associated detections before track is initialised.",
-                        type=int, default=3)
-    parser.add_argument("--iou_threshold", help="Minimum IOU for match.", type=float, default=0.3)
-    args = parser.parse_args()
-    return args
-
-total_time = 0.0
-total_frames = 0
-a = Yolo()
-frame = cv2.imread('./data/samples/000002.png')
-path = 'H:/Trackingset'
-filelist = os.listdir(path)
-print(filelist)
-file_array = []
-for i in range(len(filelist)):
-    npath = path+'/'+filelist[i]
-    filelist2 = os.listdir(npath)
-    file_array.append([])
-    for j in filelist2:
-        file_array[i].append(npath+'/'+j)
-
-#print(frame.shape)
-#GT_path = '/label_02'
-video_num = 0
-for video in file_array[0:-1]:
-    mot_tracker = Sort(max_age=1,
-                       min_hits=3,
-                       iou_threshold=0.3)  # create instance of the SORT tracker
-
-    f = open(path + '/label_02/' + filelist[video_num] + '.txt', 'r')
-    video_num+=1
-    lines = f.readlines()
-    txt_index = 0
-    mtr = MOT_metrics.Motmetrics()
-    for f in video:
-        print(f)
-        frame_num = f.split('/')[-1].split('.')[0]
-
-        gt_array = []
-        while True:
-            try:
-                gt_split = lines[txt_index].split(' ')
-                if int(frame_num) == int(gt_split[0]):
-                    if gt_split[1] != '-1':
-                        gt_array.append([float(gt_split[6]),float(gt_split[7]),float(gt_split[8]),float(gt_split[9]),int(gt_split[1])+1])
-                    txt_index+=1
-                else:
-                    break
-            except Exception as e:
-                print(e)
-                break
-        #for i in gt_array:
-            #print(i)
-        frame = cv2.imread(f)
-        result = a.forword(frame)
-        print('*')
-        print(result)
-        start_time = time.time()
-        trackers = mot_tracker.update(result,frame)
-        cycle_time = time.time() - start_time
-        total_time += cycle_time
-        total_frames += 1
-        #print(result)
-        if int(frame_num) == 89:
-            print(trackers)
-            print('@@@@@@@@@@@@')
-            print(gt_array)
-        mtr.frame_update(trackers,gt_array)
-
-
-
-        #summary = mtr.mh.compute(mtr.acc, metrics=mtr.mm.metrics.motchallenge_metrics, name='acc')
-        #print(summary)
-
-        #print(mtr.get_acc().events)
-        for d in trackers:
-            #print(d)
-            #d[:4] = list(map(int,d[:4]))
-            #print('%d,%.2f,%.2f,%.2f,%.2f,1,-1,-1,-1'%(d[4],d[0],d[1],d[2]-d[0],d[3]-d[1]))
-            #print((d[0], d[1]), (d[2], d[3]))
-            frame = cv2.rectangle(frame, (int(d[0]), int(d[1])), (int(d[2]), int(d[3])), (0, 0, 255), 3)
-            frame = cv2.putText(frame, str(int(d[4])),(int(d[0]), int(d[1])),1,2,(0, 0, 255), 2)
-
-         #print('-------real value ---------')
-        for i in range(len(result)):
-            result[i] = list(map(int,result[i]))
-            #print((result[i][0],result[i][1]), (result[i][2],result[i][3]))
-            frame = cv2.rectangle(frame, (result[i][0],result[i][1]), (result[i][2],result[i][3]),(0,255,255),2)
-            #frame = cv2.rectangle(frame, (d[0], d[1]), (d[2], d[3]), (0, 0, 255), 3)
-
-        cv2.imshow("asd", frame)
-
-        #print(result)
-        cv2.waitKey(1)
-    summary = mtr.mh.compute(mtr.acc, metrics=mtr.mm.metrics.motchallenge_metrics, name='acc')
-    print(summary)
-    break
-#if cv2.waitKey(1) == ord('q'):
-#    break
