@@ -159,6 +159,7 @@ def associate_detections_to_trackers(detections, trackers, iou_threshold=0.3):
         return np.empty((0, 2), dtype=int), np.arange(len(detections)), np.empty((0, 5), dtype=int)
 
     iou_matrix = iou_batch(detections, trackers)
+    print(iou_matrix)
 
     if min(iou_matrix.shape) > 0:
         a = (iou_matrix > iou_threshold).astype(np.int32)

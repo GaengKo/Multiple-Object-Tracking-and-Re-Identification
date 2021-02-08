@@ -11,7 +11,7 @@ np.random.seed(0)
 
 
 
-path = 'H:/MOT17/test'
+path = 'H:/MOT17/train'
 
 video_list = os.listdir(path)
 total_time = 0.0
@@ -56,8 +56,8 @@ for i in range(len(video_list)):
                 break
         frame = cv2.imread(video[frame_num])
         for d in det_array:
-            pass
-            #frame = cv2.rectangle(frame, (int(d[0]), int(d[1])), (int(d[2]), int(d[3])), (255, 0, 0), 1)
+
+            frame = cv2.rectangle(frame, (int(d[0]), int(d[1])), (int(d[2]), int(d[3])), (0, 255, 255), 2)
             #frame = cv2.putText(frame, str(d[4]), (int(d[0]), int(d[1])), 1, 2, (0, 255, 0), 2)
         start_time = time.time()
         print(np.asarray(det_array))
@@ -70,8 +70,9 @@ for i in range(len(video_list)):
             #d[:4] = list(map(int,d[:4]))
             #print('%d,%.2f,%.2f,%.2f,%.2f,1,-1,-1,-1'%(d[4],d[0],d[1],d[2]-d[0],d[3]-d[1]))
             #print((d[0], d[1]), (d[2], d[3]))
-            frame = cv2.rectangle(frame, (int(d[0]), int(d[1])), (int(d[2]), int(d[3])), (0, 0, 255), 3)
-            frame = cv2.putText(frame, str(int(d[4])),(int(d[0]), int(d[1])),1,2,(0, 0, 255), 2)
+            pass
+            #frame = cv2.rectangle(frame, (int(d[0]), int(d[1])), (int(d[2]), int(d[3])), (0, 0, 255), 3)
+            #frame = cv2.putText(frame, str(int(d[4])),(int(d[0]), int(d[1])),1,2,(0, 0, 255), 2)
         cv2.imshow("asd", frame)
         cv2.waitKey(1)
     det_f.close()
