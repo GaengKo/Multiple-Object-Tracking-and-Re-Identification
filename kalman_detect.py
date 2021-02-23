@@ -91,11 +91,15 @@ class KalmanBoxTracker(object):
     """
     count = 0
 
-    def __init__(self, bbox):
+    def __init__(self, bbox, frame):
         """
         Initialises a tracker using initial bounding box.
         """
         # define constant velocity model
+        print(type(bbox),type(bbox[0]))
+        self.represent_image = frame[int(bbox[1]):int(bbox[3]),int(bbox[0]):int(bbox[2])]
+        print()
+        cv2.imshow('afd',self.represent_image)
         self.kf = KalmanFilter(dim_x=7, dim_z=4)  # 상태변수 7, measurement input 4
         self.kf.F = np.array(
             [[1, 0, 0, 0, 1, 0, 0], [0, 1, 0, 0, 0, 1, 0], [0, 0, 1, 0, 0, 0, 1], [0, 0, 0, 1, 0, 0, 0],
@@ -128,6 +132,7 @@ class KalmanBoxTracker(object):
         self.hits = 0
         self.hit_streak = 0
         self.age = 0
+        self.represent_image = []
 
     def update(self, bbox):
         """
@@ -246,7 +251,7 @@ class Sort(object):
 
     # create and initialise new trackers for unmatched detections
     for i in unmatched_dets:
-        trk = KalmanBoxTracker(dets[i,:])
+        trk = KalmanBoxTracker(dets[i,:],frame)
         self.trackers.append(trk)
     i = len(self.trackers)
     for trk in reversed(self.trackers):
