@@ -4,6 +4,7 @@ import os
 import sys
 py_dll_path = os.path.join(sys.exec_prefix, 'Library', 'bin')
 os.add_dll_directory(py_dll_path)
+
 from utils.utils import *
 import pandas as pd
 from PIL import Image
@@ -12,7 +13,6 @@ import matplotlib
 
 matplotlib.use('TkAgg')
 
-import glob
 import time
 import argparse
 from filterpy.kalman import KalmanFilter
