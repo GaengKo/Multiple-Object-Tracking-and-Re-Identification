@@ -17,3 +17,5 @@ whereSumOdd = np.where((np.sum(array, axis = 1) > 10).reshape(3, -1), np.where( 
 
 print(whereSum)
 print(whereSumOdd)
+
+torch.load('./model/210303_BN_checkpoint')
