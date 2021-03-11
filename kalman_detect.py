@@ -92,8 +92,8 @@ class KalmanBoxTracker(object):
         # define constant velocity model
         #print(type(bbox),type(bbox[0]))
         self.represent_image = frame[int(bbox[1]):int(bbox[3]),int(bbox[0]):int(bbox[2])] # 이미지 저장
-        cv2.destroyWindow('afd')
-        cv2.imshow('afd', self.represent_image)
+        #cv2.destroyWindow('afd')
+        #cv2.imshow('afd', self.represent_image)
         #self.represent_image = np.array(self.represent_image)
         self.represent_image = Image.fromarray(self.represent_image,mode='RGB')
         self.transform = torchvision.transforms.Compose([
@@ -357,7 +357,7 @@ for video in file_array[0:-1]:
         ori_frame= frame
         result = a.forword(frame)
         print('*')
-        print(result)
+        #print(result)
         start_time = time.time()
         trackers = mot_tracker.update(result,ori_frame)
         cycle_time = time.time() - start_time
@@ -376,26 +376,28 @@ for video in file_array[0:-1]:
         #print(summary)
 
         #print(mtr.get_acc().events)
-        for d in trackers:
+        #for d in trackers:
             #print(d)
             #d[:4] = list(map(int,d[:4]))
             #print('%d,%.2f,%.2f,%.2f,%.2f,1,-1,-1,-1'%(d[4],d[0],d[1],d[2]-d[0],d[3]-d[1]))
             #print((d[0], d[1]), (d[2], d[3]))
-            frame = cv2.rectangle(frame, (int(d[0]), int(d[1])), (int(d[2]), int(d[3])), (0, 0, 255), 3)
-            frame = cv2.putText(frame, str(int(d[4])),(int(d[0]), int(d[1])),1,2,(0, 0, 255), 2)
+            #frame = cv2.rectangle(frame, (int(d[0]), int(d[1])), (int(d[2]), int(d[3])), (0, 0, 255), 3)
+            #frame = cv2.putText(frame, str(int(d[4])),(int(d[0]), int(d[1])),1,2,(0, 0, 255), 2)
 
          #print('-------real value ---------')
         for i in range(len(result)):
             result[i] = list(map(int,result[i]))
             #print((result[i][0],result[i][1]), (result[i][2],result[i][3]))
-            frame = cv2.rectangle(frame, (result[i][0],result[i][1]), (result[i][2],result[i][3]),(0,255,255),2)
+            #frame = cv2.rectangle(frame, (result[i][0],result[i][1]), (result[i][2],result[i][3]),(0,255,255),2)
             #frame = cv2.rectangle(frame, (d[0], d[1]), (d[2], d[3]), (0, 0, 255), 3)
 
-        cv2.imshow("asd", frame)
+        #cv2.imshow("asd", frame)
 
         #print(result)
-        cv2.waitKey(1)
+        #cv2.waitKey(1)
     summary = mtr.mh.compute(mtr.acc, metrics=mtr.mm.metrics.motchallenge_metrics, name='acc')
+    for i in summary:
+        print(i)
     print(summary)
     break
 #if cv2.waitKey(1) == ord('q'):
