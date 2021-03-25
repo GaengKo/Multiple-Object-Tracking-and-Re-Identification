@@ -342,7 +342,7 @@ total_time = 0.0
 total_frames = 0
 a = Yolo()
 embedding_model = EmbeddingNet()
-checkpoint = torch.load('./model/testmodel')
+checkpoint = torch.load('./model/210324_DS_checkpoint')
 model = TripletNet(embedding_model)
 model.load_state_dict(checkpoint['model_state_dict'])
 model.eval()
@@ -367,7 +367,7 @@ for video in file_array[0:-1]:
                        min_hits=3,
                        iou_threshold=0.3,
                        Embedding=model)  # create instance of the SORT tracker
-    f_out = open(path + '/tracker_result/' + filelist[video_num] + '.txt', 'w')
+    #FILE#f_out = open(path + '/tracker_result/' + filelist[video_num] + '.txt', 'w')
     f = open(path + '/label_02/' + filelist[video_num] + '.txt', 'r')
     video_num+=1
     lines = f.readlines()
@@ -414,6 +414,7 @@ for video in file_array[0:-1]:
         #print(summary)
 
         #print(mtr.get_acc().events)
+        """#FILE
         for i,d in enumerate(trackers):
             #print(d)
             #d[:4] = list(map(int,d[:4]))
@@ -440,7 +441,7 @@ for video in file_array[0:-1]:
             elif c[i] == 7:
                 f_out.write('Person_sitting ')
             f_out.write('-1 -1 -10.0 {0} {1} {2} {3} -1000.000000 -1000.000000 -1000.000000 -10.000000 -1.000000 -1.000000 -1.000000\n'.format(d[0],d[1],d[2],d[3]))
-
+            """
             #frame = cv2.rectangle(frame, (int(d[0]), int(d[1])), (int(d[2]), int(d[3])), (0, 0, 255), 3)
             #frame = cv2.putText(frame, str(int(d[4])),(int(d[0]), int(d[1])),1,2,(0, 0, 255), 2)
 
@@ -451,13 +452,13 @@ for video in file_array[0:-1]:
             #frame = cv2.rectangle(frame, (result[i][0],result[i][1]), (result[i][2],result[i][3]),(0,255,255),2)
             #frame = cv2.rectangle(frame, (d[0], d[1]), (d[2], d[3]), (0, 0, 255), 3)
 
-        cv2.imshow("asd", frame)
+        #cv2.imshow("asd", frame)
 
         #print(result)
         #cv2.waitKey(0)
     summary = mtr.mh.compute(mtr.acc, metrics=mtr.mm.metrics.motchallenge_metrics, name='acc')
     print(summary)
-    f_out.close()
+    #FILE#f_out.close()
     #break
 #if cv2.waitKey(1) == ord('q'):
 #    break
