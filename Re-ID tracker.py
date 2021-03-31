@@ -18,7 +18,7 @@ import argparse
 from filterpy.kalman import KalmanFilter
 import torchvision
 import MOT_metrics
-from embeddingNet import EmbeddingNet, TripletNet
+from embeddingNet import EmbeddingNet, TripletNet, Net
 np.random.seed(0)
 
 
@@ -245,7 +245,7 @@ class Sort(object):
     self.frame_count = 0
     self.EmbeddingFunc = Embedding
     self.transform = torchvision.transforms.Compose([
-            torchvision.transforms.Resize(224),
+            torchvision.transforms.Resize((224,224)),
             #transforms.CenterCrop(224),
             torchvision.transforms.ToTensor(),
             torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
@@ -341,7 +341,8 @@ def parse_args():
 total_time = 0.0
 total_frames = 0
 a = Yolo()
-embedding_model = EmbeddingNet()
+#embedding_model = EmbeddingNet() #googleNet backbone
+embedding_model = Net()
 checkpoint = torch.load('./model/210324_DS_checkpoint')
 model = TripletNet(embedding_model)
 model.load_state_dict(checkpoint['model_state_dict'])
