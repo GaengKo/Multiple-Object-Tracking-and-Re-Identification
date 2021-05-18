@@ -120,3 +120,4 @@ class Net(nn.Module):
         return x
     def get_embedding(self,x):
         return self.forward(x)
+

@@ -347,6 +347,7 @@ checkpoint = torch.load('./model/210324_DS_checkpoint')
 model = TripletNet(embedding_model)
 model.load_state_dict(checkpoint['model_state_dict'])
 model.eval()
+print(model)
 
 frame = cv2.imread('./data/samples/000002.png')
 path = 'H:/Trackingset'
