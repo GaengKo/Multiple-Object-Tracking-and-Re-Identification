@@ -38,7 +38,10 @@ print(whereSumOdd)
 embedding_model = Net()
 checkpoint = torch.load('./model/210324_DS_checkpoint')
 model = TripletNet(embedding_model)
+#model = embedding_model
 model.load_state_dict(checkpoint['model_state_dict'])
+
 model.eval()
+#print(model)
 from torchsummary import summary as summary_
 summary_(embedding_model,(3,224,224),device='cpu')

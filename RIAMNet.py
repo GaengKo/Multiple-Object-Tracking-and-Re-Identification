@@ -1,20 +1,7 @@
 import torch.nn as nn
 import torch
 import torch.nn.functional as F
-
-class EmbeddingNet(nn.Module):
-    def __init__(self):
-        super(EmbeddingNet, self).__init__()
-        self.model = torch.hub.load('pytorch/vision:v0.6.0', 'googlenet', pretrained=True)
-        self.fc = nn.Sequential(nn.Linear(1000,128),
-                                nn.BatchNorm1d(128))
-
-    def forward(self, x):
-        output = self.model(x)
-        output = self.fc(output)
-        return output
-    def get_embedding(self,x):
-        return self.forward(x)
+from cbam import *
 
 class TripletNet(nn.Module):
     def __init__(self, embedding_net):
@@ -29,6 +16,8 @@ class TripletNet(nn.Module):
 
     def get_embedding(self, x):
         return self.embedding_net(x)
+
+
 class BasicBlock(nn.Module):
     def __init__(self, c_in, c_out, is_downsample=False):
         super(BasicBlock, self).__init__()
@@ -41,6 +30,7 @@ class BasicBlock(nn.Module):
         self.relu = nn.ReLU(True)
         self.conv2 = nn.Conv2d(c_out, c_out, 3, stride=1, padding=1, bias=False)
         self.bn2 = nn.BatchNorm2d(c_out)
+        self.cbam = CBAM(c_out,16)
         if is_downsample:
             self.downsample = nn.Sequential(
                 nn.Conv2d(c_in, c_out, 1, stride=2, bias=False),
@@ -61,6 +51,7 @@ class BasicBlock(nn.Module):
         y = self.bn2(y)
         if self.is_downsample:
             x = self.downsample(x)
+        y = self.cbam(y)
         return F.relu(x.add(y), True)
 
 
@@ -118,5 +109,3 @@ class Net(nn.Module):
         x = x.div(x.norm(p=2, dim=1, keepdim=True))
         #print(x.shape)
         return x
-    def get_embedding(self,x):
-        return self.forward(x)
