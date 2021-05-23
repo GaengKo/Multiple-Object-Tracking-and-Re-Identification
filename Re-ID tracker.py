@@ -19,6 +19,7 @@ from filterpy.kalman import KalmanFilter
 import torchvision
 import MOT_metrics
 from embeddingNet import EmbeddingNet, TripletNet, Net
+from RIAMNet import RIAMNet
 np.random.seed(0)
 
 
@@ -51,7 +52,7 @@ def iou_batch(bb_test, bb_gt, det_features, trks_features):
     o = wh / ((bb_test[..., 2] - bb_test[..., 0]) * (bb_test[..., 3] - bb_test[..., 1])
               + (bb_gt[..., 2] - bb_gt[..., 0]) * (bb_gt[..., 3] - bb_gt[..., 1]) - wh)
     #print(o)
-    o = o * 0.5
+    o = o * 0.1
     #print('---')
     for i in range(len(o)):
         for j in range(len(o[i])):
@@ -60,7 +61,7 @@ def iou_batch(bb_test, bb_gt, det_features, trks_features):
             dis = det_features[i][0]-trks_features[j][0]
             #print(torch.norm(dis))
             #print('dis')
-            o[i][j] += 0.5*(1-(torch.norm(dis,p=2)))
+            o[i][j] += 0.9*(1-(torch.norm(dis,p=2)))
     #print(o)
     #print('123')
     return (o)
@@ -342,8 +343,9 @@ total_time = 0.0
 total_frames = 0
 a = Yolo()
 #embedding_model = EmbeddingNet() #googleNet backbone
+modelname ='210324_DS_checkpoint'
 embedding_model = Net()
-checkpoint = torch.load('./model/210324_DS_checkpoint')
+checkpoint = torch.load('./model/'+modelname)
 model = TripletNet(embedding_model)
 model.load_state_dict(checkpoint['model_state_dict'])
 model.eval()
@@ -364,13 +366,13 @@ for i in range(len(filelist)):
 #print(frame.shape)
 #GT_path = '/label_02'
 video_num = 0
-for video in file_array[0:-1]:
+for video in file_array[1:-1]:
     mot_tracker = Sort(max_age=3,
                        min_hits=3,
                        iou_threshold=0.3,
                        Embedding=model)  # create instance of the SORT tracker
     #FILE#
-    f_out = open(path + '/tracker_result/' + filelist[video_num] + '.txt', 'w')
+    f_out = open(path + '/tracker_result/' +modelname+'_'+filelist[video_num] + '.txt', 'w')
     f = open(path + '/label_02/' + filelist[video_num] + '.txt', 'r')
     video_num+=1
     lines = f.readlines()
@@ -409,13 +411,17 @@ for video in file_array[0:-1]:
             print(trackers)
             print('@@@@@@@@@@@@')
             print(gt_array)
-        mtr.frame_update(trackers,gt_array)
+        try:
+            mtr.frame_update(trackers,gt_array)
+        except Exception as e:
+            print(trackers,gt_array)
+
 
         #summary = mtr.mh.compute(mtr.acc, metrics=mtr.mm.metrics.motchallenge_metrics, name='acc')
         #print(summary)
 
         #print(mtr.get_acc().events)
-        """#FILE
+        #FILE
         for i,d in enumerate(trackers):
             #print(d)
             #d[:4] = list(map(int,d[:4]))
@@ -442,10 +448,10 @@ for video in file_array[0:-1]:
             elif c[i] == 7:
                 f_out.write('Person_sitting ')
             f_out.write('-1 -1 -10.0 {0} {1} {2} {3} -1000.000000 -1000.000000 -1000.000000 -10.000000 -1.000000 -1.000000 -1.000000\n'.format(d[0],d[1],d[2],d[3]))
-            """
-        for i, d in enumerate(trackers):
-            frame = cv2.rectangle(frame, (int(d[0]), int(d[1])), (int(d[2]), int(d[3])), (0, 0, 255), 3)
-            frame = cv2.putText(frame, str(int(d[4])),(int(d[0]), int(d[1])),1,2,(0, 0, 255), 2)
+
+        #for i, d in enumerate(trackers):
+            #frame = cv2.rectangle(frame, (int(d[0]), int(d[1])), (int(d[2]), int(d[3])), (0, 0, 255), 3)
+            #frame = cv2.putText(frame, str(int(d[4])),(int(d[0]), int(d[1])),1,2,(0, 0, 255), 2)
 
          #print('-------real value ---------')
         #for i in range(len(result)):
@@ -460,7 +466,7 @@ for video in file_array[0:-1]:
         #cv2.waitKey(0)
     summary = mtr.mh.compute(mtr.acc, metrics=mtr.mm.metrics.motchallenge_metrics, name='acc')
     print(summary)
-    #FILE#f_out.close()
+    f_out.close()
     #break
 #if cv2.waitKey(1) == ord('q'):
 #    break

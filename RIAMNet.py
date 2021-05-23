@@ -64,9 +64,9 @@ def make_layers(c_in, c_out, repeat_times, is_downsample=False):
             blocks += [BasicBlock(c_out, c_out), ]
     return nn.Sequential(*blocks)
 
-class Net(nn.Module):
+class RIAMNet(nn.Module):
     def __init__(self, reid=True):
-        super(Net, self).__init__()
+        super(RIAMNet, self).__init__()
         # 3 128 64
         self.conv = nn.Sequential(
             nn.Conv2d(3, 32, 3, stride=1, padding=1),
