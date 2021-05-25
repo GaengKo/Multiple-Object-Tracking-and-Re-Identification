@@ -115,8 +115,9 @@ class KalmanBoxTracker(object):
         self.transform = transform
         self.represent_image = self.transform(self.represent_image)
         #print()
+        self.emdeddingFunc = embeddingFunc
         if embeddingFunc != None :
-            self.feature = embedding_model.get_embedding(self.represent_image.unsqueeze(0))
+            self.feature = embeddingFunc.get_embedding(self.represent_image.unsqueeze(0))
         #print(len(self.feature[0]))
         #print('********')
 
@@ -162,7 +163,7 @@ class KalmanBoxTracker(object):
         self.represent_image = frame[int(bbox[1]):int(bbox[3]), int(bbox[0]):int(bbox[2])]
         self.represent_image = Image.fromarray(self.represent_image, mode='RGB')
         self.represent_image = self.transform(self.represent_image)
-        self.feature = embedding_model.get_embedding(self.represent_image.unsqueeze(0))
+        self.feature = self.emdeddingFunc.get_embedding(self.represent_image.unsqueeze(0))
         self.time_since_update = 0
         self.history = []
         self.hits += 1
@@ -282,7 +283,7 @@ class Sort(object):
       represent_image = frame[int(dets[d,1]):int(dets[d,3]), int(dets[d,0]):int(dets[d,2])]
       represent_image = Image.fromarray(represent_image, mode='RGB')
       represent_image = self.transform(represent_image)
-      feature = embedding_model.get_embedding(represent_image.unsqueeze(0))
+      feature = self.EmbeddingFunc.get_embedding(represent_image.unsqueeze(0))
       det_features.append(feature)
     #print(len(trks))
     for t in reversed(to_del):
@@ -343,10 +344,14 @@ total_time = 0.0
 total_frames = 0
 a = Yolo()
 #embedding_model = EmbeddingNet() #googleNet backbone
-modelname ='210324_DS_checkpoint'
-embedding_model = Net()
+#modelname ='210324_DS_checkpoint'
+modelname = 'RIAM_finetuning_checkpoint'
+#embedding_model = RIAMNet()
 checkpoint = torch.load('./model/'+modelname)
-model = TripletNet(embedding_model)
+#embedding_model.load_state_dict(checkpoint['model_state_dict'])
+#embedding_model.eval()
+#model = TripletNet(embedding_model)
+model = RIAMNet()
 model.load_state_dict(checkpoint['model_state_dict'])
 model.eval()
 print(model)
@@ -365,7 +370,7 @@ for i in range(len(filelist)):
 
 #print(frame.shape)
 #GT_path = '/label_02'
-video_num = 0
+video_num =1
 for video in file_array[1:-1]:
     mot_tracker = Sort(max_age=3,
                        min_hits=3,
@@ -392,7 +397,9 @@ for video in file_array[1:-1]:
                 else:
                     break
             except Exception as e:
-                print(e)
+                #print(e)
+                #print(frame_num)
+                #print(gt_split)
                 break
         #for i in gt_array:
             #print(i)
@@ -402,7 +409,10 @@ for video in file_array[1:-1]:
         #print('*')
         #print(result)
         start_time = time.time()
-        trackers,c = mot_tracker.update(result,ori_frame)
+        try:
+            trackers,c = mot_tracker.update(result,ori_frame)
+        except Exception as e:
+            print(e)
         cycle_time = time.time() - start_time
         total_time += cycle_time
         total_frames += 1

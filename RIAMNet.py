@@ -109,3 +109,5 @@ class RIAMNet(nn.Module):
         x = x.div(x.norm(p=2, dim=1, keepdim=True))
         #print(x.shape)
         return x
+    def get_embedding(self, x):
+        return self.forward(x)
