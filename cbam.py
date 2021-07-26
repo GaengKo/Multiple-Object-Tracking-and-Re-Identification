@@ -34,6 +34,7 @@ class ChannelGate(nn.Module):
             nn.Linear(gate_channels // reduction_ratio, gate_channels)
             )
         self.pool_types = pool_types
+
     def forward(self, x):
         channel_att_sum = None
         for pool_type in self.pool_types:
@@ -75,6 +76,16 @@ class SpatialGate(nn.Module):
         kernel_size = 7
         self.compress = ChannelPool()
         self.spatial = BasicConv(2, 1, kernel_size, stride=1, padding=(kernel_size-1) // 2, relu=False)
+
+    """
+           visualization
+           """
+    def get_spatial(self,x):
+        x_compress = self.compress(x)
+        x_out = self.spatial(x_compress)
+        scale = F.sigmoid(x_out)  # broadcasting
+        return scale
+
     def forward(self, x):
         x_compress = self.compress(x)
         x_out = self.spatial(x_compress)
@@ -92,4 +103,10 @@ class CBAM(nn.Module):
         x_out = self.ChannelGate(x)
         if not self.no_spatial:
             x_out = self.SpatialGate(x_out)
+        return x_out
+    """visualization"""
+    def get_spatial(self,x):
+        x_out = self.ChannelGate(x)
+        if not self.no_spatial:
+            x_out = self.SpatialGate.get_spatial(x_out)
         return x_out

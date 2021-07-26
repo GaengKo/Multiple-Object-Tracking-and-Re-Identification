@@ -54,6 +54,17 @@ class BasicBlock(nn.Module):
         y = self.cbam(y)
         return F.relu(x.add(y), True)
 
+    def get_spatial(self,x):
+
+        y = self.conv1(x)
+        y = self.bn1(y)
+        y = self.relu(y)
+        y = self.conv2(y)
+        y = self.bn2(y)
+        if self.is_downsample:
+            x = self.downsample(x)
+        y = self.cbam.get_spatial(y)
+        return y
 
 def make_layers(c_in, c_out, repeat_times, is_downsample=False):
     blocks = []
@@ -111,3 +122,4 @@ class RIAMNet(nn.Module):
         return x
     def get_embedding(self, x):
         return self.forward(x)
+

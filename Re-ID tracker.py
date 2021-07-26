@@ -281,9 +281,76 @@ class Sort(object):
     det_features = []
     for d in range(len(dets)):
       represent_image = frame[int(dets[d,1]):int(dets[d,3]), int(dets[d,0]):int(dets[d,2])]
+      cv2.imshow("assddfd",represent_image)
       represent_image = Image.fromarray(represent_image, mode='RGB')
+
+      tr = torchvision.transforms.Compose([
+          torchvision.transforms.Resize((112, 112)),
+          torchvision.transforms.ToTensor()])
+      s__ = tr(represent_image)
+      permute = [2, 1, 0]
+      s__ = s__.permute(1, 2, 0)[:,:,permute]
+      print(s__.shape)
+
       represent_image = self.transform(represent_image)
       feature = self.EmbeddingFunc.get_embedding(represent_image.unsqueeze(0))
+
+      x__ = self.EmbeddingFunc.conv(represent_image.unsqueeze(0))
+      sp_block = []
+      for i in range(len(self.EmbeddingFunc.layer1)):
+          sp_block.append(self.EmbeddingFunc.layer1[i].get_spatial(x__))
+          x__ = self.EmbeddingFunc.layer1[i](x__)
+      for i in range(len(self.EmbeddingFunc.layer2)):
+          sp_block.append(self.EmbeddingFunc.layer2[i].get_spatial(x__))
+          x__ = self.EmbeddingFunc.layer2[i](x__)
+      for i in range(len(self.EmbeddingFunc.layer3)):
+          sp_block.append(self.EmbeddingFunc.layer3[i].get_spatial(x__))
+          x__ = self.EmbeddingFunc.layer3[i](x__)
+
+      print(np.shape(sp_block[0]))
+      #fig, axes = plt.subplot(nrows=2,nclos=3)
+
+      # 1번 합쳐서 평균 내보기
+      # 2번 테투리 잘라서 ( 나중에 )
+      # 3번 normalize
+      # 4번 image * normalize 된 애
+      plt.subplot(2, 4, 1)
+      plt.imshow(sp_block[0][0, 0].detach().numpy(),cmap='jet')
+      plt.subplot(2, 4, 2)
+      plt.imshow(sp_block[1][0, 0].detach().numpy(), cmap='jet')
+      plt.subplot(2, 4, 3)
+      plt.imshow(sp_block[2][0, 0].detach().numpy(), cmap='jet')
+      plt.subplot(2, 4, 4)
+      plt.imshow(sp_block[3][0, 0].detach().numpy(), cmap='jet')
+      plt.subplot(2, 4, 5)
+      plt.imshow(sp_block[4][0, 0].detach().numpy(), cmap='jet')
+      plt.subplot(2, 4, 6)
+      plt.imshow(sp_block[5][0, 0].detach().numpy(), cmap='jet')
+      x_bar = sp_block[0]
+      #x_bar = torch.nn.functional.interpolate(sp_block[0], size=112)
+      print(x_bar.shape)
+      print(x_bar[0,0][0,0])
+      print(sp_block[1][0, 0][0, 0])
+      for i in range(5):
+          x_bar += torch.nn.functional.interpolate(sp_block[i+1], size=112)
+          print(x_bar[0, 0][0, 0])
+      x_bar /= 6
+      print(x_bar[0, 0][0, 0])
+      print(x_bar.shape)
+      x_norm = (x_bar[0,0] - torch.min(x_bar[0,0])) / (torch.max(x_bar[0,0]) - torch.min(x_bar[0,0]))
+      print(x_norm.shape)
+      print(s__.shape)
+      for i in range(112):
+          for j in range(112):
+              for z in range(3):
+                  s__[i][j][z] *= x_norm[i][j]
+      plt.subplot(2, 4, 7)
+      plt.imshow(s__.detach().numpy())
+      plt.subplot(2,4,8)
+      plt.imshow(x_norm.detach().numpy(),cmap='jet')
+      plt.show()
+
+
       det_features.append(feature)
     #print(len(trks))
     for t in reversed(to_del):
@@ -354,7 +421,7 @@ checkpoint = torch.load('./model/'+modelname)
 model = RIAMNet()
 model.load_state_dict(checkpoint['model_state_dict'])
 model.eval()
-print(model)
+
 
 frame = cv2.imread('./data/samples/000002.png')
 path = 'H:/Trackingset'
@@ -371,7 +438,7 @@ for i in range(len(filelist)):
 #print(frame.shape)
 #GT_path = '/label_02'
 video_num =1
-for video in file_array[1:-1]:
+for video in file_array[4:-1]:
     mot_tracker = Sort(max_age=3,
                        min_hits=3,
                        iou_threshold=0.3,
@@ -409,10 +476,10 @@ for video in file_array[1:-1]:
         #print('*')
         #print(result)
         start_time = time.time()
-        try:
-            trackers,c = mot_tracker.update(result,ori_frame)
-        except Exception as e:
-            print(e)
+        #try:
+        trackers,c = mot_tracker.update(result,ori_frame)
+        #except Exception as e:
+        #    print(e)
         cycle_time = time.time() - start_time
         total_time += cycle_time
         total_frames += 1
@@ -472,7 +539,9 @@ for video in file_array[1:-1]:
             #frame = cv2.rectangle(frame, (d[0], d[1]), (d[2], d[3]), (0, 0, 255), 3)
 
         cv2.imshow("asd", frame)
+        print("result_img/"+str(video_num)+"_"+frame_num+'.png')
 
+        #cv2.imwrite("result_img/"+str(video_num)+"_"+frame_num+'.png',frame)
         #print(result)
         cv2.waitKey(1)
     summary = mtr.mh.compute(mtr.acc, metrics=mtr.mm.metrics.motchallenge_metrics, name='acc')
